@@ -11,19 +11,58 @@ from transfer_function import TransferFunction, make_freq_vector
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Bode and Nyquist Plots - Transfer Function")
-        self.geometry("600x760")
+        self.title("Bode & Nyquist")
+        self._configure_style()
         self._build_ui()
+        # Measure the active theme and font before choosing the window size.
+        self.update_idletasks()
+        self.minsize(self.winfo_reqwidth(), self.winfo_reqheight())
+
+    def _configure_style(self):
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        self.configure(background="#f4f7fa")
+        style.configure(".", background="#f4f7fa", foreground="#20354a")
+        style.configure("TButton", padding=(9, 5))
+        style.configure("Primary.TButton", background="#17665f", foreground="white")
+        style.map("Primary.TButton", background=[("pressed", "#104640"),
+                                                  ("active", "#1d7870")])
+        style.configure("TNotebook", borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(14, 6))
+        style.map("TNotebook.Tab", foreground=[("selected", "#125b55")],
+                  background=[("selected", "#e1efed")])
+        style.configure("TLabelframe", bordercolor="#cbd7df", relief="solid")
+        style.configure("TLabelframe.Label", foreground="#284761")
+        self.option_add("*Listbox.relief", "flat")
+        self.option_add("*Listbox.highlightThickness", 1)
+        self.option_add("*Listbox.highlightBackground", "#cbd7df")
+        self.option_add("*Listbox.selectBackground", "#17665f")
 
     def _set_spin(self, value):
         self.spin_g.delete(0, 'end')
         self.spin_g.insert(0, str(value))
 
     def _build_ui(self):
-        pad = dict(padx=8, pady=6)
+        # Reserve the action bar before allocating space to the editor.
+        actions = ttk.Frame(self, padding=(16, 10))
+        actions.pack(side="bottom", fill="x")
+        ttk.Button(actions, text="Load example", command=self.load_example).pack(side="left")
+        ttk.Button(actions, text="Generate plots", style="Primary.TButton",
+                   command=self.generate).pack(side="right")
+        ttk.Button(actions, text="Exit", command=self.destroy).pack(side="right", padx=8)
+        ttk.Separator(self).pack(side="bottom", fill="x")
 
-        top = ttk.LabelFrame(self, text="General parameters", padding=8)
-        top.pack(fill='x', **pad)
+        tabs = ttk.Notebook(self)
+        tabs.pack(fill="both", expand=True, padx=16, pady=(14, 8))
+        settings = ttk.Frame(tabs, padding=10)
+        zeros = ttk.Frame(tabs, padding=10)
+        poles = ttk.Frame(tabs, padding=10)
+        for page, title in ((settings, "Parameters"), (zeros, "Zeros"), (poles, "Poles")):
+            tabs.add(page, text=title)
+        tabs.enable_traversal()
+
+        top = ttk.LabelFrame(settings, text="General parameters", padding=10)
+        top.pack(fill="x", pady=(0, 8))
         ttk.Label(top, text="Gain K:").grid(row=0, column=0, sticky='w')
         self.entry_K = ttk.Entry(top, width=10)
         self.entry_K.insert(0, "1")
@@ -34,17 +73,17 @@ class App(tk.Tk):
         self.spin_g.grid(row=0, column=3, padx=6)
         self._set_spin(0)
 
-        self.frame_rz = RealListFrame(self, "Real zeros  (1 + s*tau)")
-        self.frame_rz.pack(fill='x', **pad)
-        self.frame_rp = RealListFrame(self, "Real poles  (1 + s*tau)")
-        self.frame_rp.pack(fill='x', **pad)
-        self.frame_cz = ComplexListFrame(self, "Complex zeros  (1 + 2*zeta*s/wn + s^2/wn^2)")
-        self.frame_cz.pack(fill='x', **pad)
-        self.frame_cp = ComplexListFrame(self, "Complex poles  (1 + 2*zeta*s/wn + s^2/wn^2)")
-        self.frame_cp.pack(fill='x', **pad)
+        self.frame_rz = RealListFrame(zeros, "Real zeros  (1 + s*tau)")
+        self.frame_rz.pack(fill='x', pady=(0, 6))
+        self.frame_rp = RealListFrame(poles, "Real poles  (1 + s*tau)")
+        self.frame_rp.pack(fill='x', pady=(0, 6))
+        self.frame_cz = ComplexListFrame(zeros, "Complex zeros  (1 + 2*zeta*s/wn + s^2/wn^2)")
+        self.frame_cz.pack(fill='x', pady=(0, 6))
+        self.frame_cp = ComplexListFrame(poles, "Complex poles  (1 + 2*zeta*s/wn + s^2/wn^2)")
+        self.frame_cp.pack(fill='x', pady=(0, 6))
 
-        freq = ttk.LabelFrame(self, text="Frequency range", padding=8)
-        freq.pack(fill='x', **pad)
+        freq = ttk.LabelFrame(settings, text="Frequency range", padding=10)
+        freq.pack(fill='x', pady=(0, 6))
         self.auto_range = tk.BooleanVar(value=True)
         ttk.Checkbutton(freq, text="Automatic", variable=self.auto_range,
                          command=self._toggle_range).grid(row=0, column=0, sticky='w')
@@ -54,12 +93,6 @@ class App(tk.Tk):
         ttk.Label(freq, text="w max [rad/s]:").grid(row=1, column=2, sticky='w')
         self.entry_wmax = ttk.Entry(freq, width=10, state='disabled')
         self.entry_wmax.grid(row=1, column=3, padx=6)
-
-        btns = ttk.Frame(self)
-        btns.pack(fill='x', **pad)
-        ttk.Button(btns, text="Load example", command=self.load_example).pack(side='left', padx=4)
-        ttk.Button(btns, text="Generate plots", command=self.generate).pack(side='left', padx=4)
-        ttk.Button(btns, text="Exit", command=self.destroy).pack(side='right', padx=4)
 
     def _toggle_range(self):
         state = 'disabled' if self.auto_range.get() else 'normal'
