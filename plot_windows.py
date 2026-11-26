@@ -31,14 +31,13 @@ def open_nyquist_window(parent, tf, w):
 def _embed_figure(win, fig):
     canvas = FigureCanvasTkAgg(fig, master=win)
     canvas.draw()
-    canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
 
     controls = ttk.Frame(win)
     controls.pack(side='bottom', fill='x')
 
     toolbar = NavigationToolbar2Tk(canvas, controls, pack_toolbar=False)
     toolbar.update()
-    toolbar.pack(side='left')
+    toolbar.pack(side='top', fill='x')
 
     # --- save the initial axis limits for the reset button
     original_limits = {ax: (ax.get_xlim(), ax.get_ylim()) for ax in fig.axes}
@@ -76,13 +75,18 @@ def _embed_figure(win, fig):
         canvas.draw_idle()
 
     zoom_frame = ttk.Frame(controls)
-    zoom_frame.pack(side='right', padx=6)
+    zoom_frame.pack(anchor='e', padx=6, pady=(0, 4))
     ttk.Button(zoom_frame, text="Zoom +", width=8,
                command=lambda: zoom_all(1 / 1.3)).pack(side='left', padx=2)
     ttk.Button(zoom_frame, text="Zoom -", width=8,
                command=lambda: zoom_all(1.3)).pack(side='left', padx=2)
     ttk.Button(zoom_frame, text="Reset view", width=10,
                command=reset_view).pack(side='left', padx=2)
+
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
+    # Use the natural size once. Coordinate readouts must not resize the window.
+    win.update_idletasks()
+    win.geometry(f"{win.winfo_reqwidth()}x{win.winfo_reqheight()}")
 
     canvas.mpl_connect('scroll_event', on_scroll)
     win.protocol("WM_DELETE_WINDOW", win.destroy)
