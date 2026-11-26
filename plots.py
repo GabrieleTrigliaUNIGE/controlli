@@ -57,19 +57,14 @@ def plot_nyquist(tf, w, fig):
             core = np.ones_like(radius, dtype=bool)
         re_c, im_c = re[core], im[core]
 
-        xlo, xhi = re_c.min(), re_c.max()
-        ylo, yhi = im_c.min(), im_c.max()
-        xlo, xhi = min(xlo, -1.3), max(xhi, 0.3)
-        ylo, yhi = min(ylo, -0.3), max(yhi, 0.3)
-        padx = 0.15 * (xhi - xlo + 1e-9)
-        pady = 0.15 * (yhi - ylo + 1e-9)
-        ax.set_xlim(xlo - padx, xhi + padx)
-        ax.set_ylim(ylo - pady, yhi + pady)
-
-        xspan = (xhi + padx) - (xlo - padx)
-        yspan = (yhi + pady) - (ylo - pady)
-        if xspan > 0 and yspan > 0 and max(xspan, yspan) / min(xspan, yspan) <= 8:
-            ax.set_aspect('equal', adjustable='box')
+        xlo = min(re_c.min(), -1.3)
+        xhi = max(re_c.max(), 0.3)
+        center_x = (xlo + xhi) / 2
+        # Include both mirrored branches and leave room around the critical point.
+        half_span = 1.3 * max((xhi - xlo) / 2, np.max(np.abs(im_c)), 0.3)
+        ax.set_xlim(center_x - half_span, center_x + half_span)
+        ax.set_ylim(-half_span, half_span)
+        ax.set_aspect('equal', adjustable='datalim')
 
     ax.legend(loc='best', fontsize=9)
 
